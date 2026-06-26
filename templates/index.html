@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Udemy Syllabus Extractor</title>
+    <style>
+        :root {
+            --accent: #a435f0;
+            --accent-dark: #8710d8;
+            --bg: #f7f9fa;
+            --card: #ffffff;
+            --text: #1c1d1f;
+            --muted: #6a6f73;
+            --border: #d1d7dc;
+            --error-bg: #fdecea;
+            --error-text: #b42318;
+            --success-bg: #ecfdf3;
+            --success-text: #027a48;
+        }
+
+        * { box-sizing: border-box; }
+
+        body {
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+                Helvetica, Arial, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 24px;
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            box-shadow: 0 2px 12px rgba(0, 0, 0, 0.06);
+            width: 100%;
+            max-width: 560px;
+            padding: 32px;
+        }
+
+        h1 {
+            margin: 0 0 4px;
+            font-size: 1.6rem;
+        }
+
+        p.subtitle {
+            margin: 0 0 24px;
+            color: var(--muted);
+            font-size: 0.95rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        input[type="url"] {
+            width: 100%;
+            padding: 12px 14px;
+            font-size: 1rem;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        input[type="url"]:focus {
+            border-color: var(--accent);
+        }
+
+        button {
+            margin-top: 16px;
+            width: 100%;
+            padding: 12px 16px;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #fff;
+            background: var(--accent);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.15s;
+        }
+
+        button:hover:not(:disabled) { background: var(--accent-dark); }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .status {
+            margin-top: 20px;
+            padding: 14px 16px;
+            border-radius: 8px;
+            font-size: 0.92rem;
+            display: none;
+        }
+
+        .status.error {
+            display: block;
+            background: var(--error-bg);
+            color: var(--error-text);
+        }
+
+        .status.success {
+            display: block;
+            background: var(--success-bg);
+            color: var(--success-text);
+        }
+
+        .status.success a {
+            color: var(--success-text);
+            font-weight: 700;
+        }
+
+        .meta {
+            margin-top: 8px;
+            font-size: 0.85rem;
+            opacity: 0.85;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            vertical-align: middle;
+            margin-right: 8px;
+        }
+
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <main class="card">
+        <h1>Udemy Syllabus Extractor</h1>
+        <p class="subtitle">
+            Paste a Udemy course URL to generate a structured markdown syllabus.
+        </p>
+
+        <form id="extract-form">
+            <label for="url">Udemy course URL</label>
+            <input
+                type="url"
+                id="url"
+                name="url"
+                placeholder="https://www.udemy.com/course/..."
+                required
+            />
+            <button type="submit" id="submit-btn">Extract Syllabus</button>
+        </form>
+
+        <div class="status" id="status"></div>
+    </main>
+
+    <script>
+        const form = document.getElementById("extract-form");
+        const urlInput = document.getElementById("url");
+        const btn = document.getElementById("submit-btn");
+        const status = document.getElementById("status");
+
+        function showError(message) {
+            status.className = "status error";
+            status.textContent = message;
+        }
+
+        function showSuccess(data) {
+            status.className = "status success";
+            status.innerHTML =
+                `<div>✅ Syllabus extracted for <strong>${data.title || "the course"}</strong>.</div>` +
+                `<div class="meta">${data.sections} sections · ${data.objectives} objectives</div>` +
+                `<div class="meta"><a href="${data.download_url}">Download ${data.filename}</a></div>`;
+        }
+
+        function setLoading(isLoading) {
+            btn.disabled = isLoading;
+            btn.innerHTML = isLoading
+                ? '<span class="spinner"></span>Extracting…'
+                : "Extract Syllabus";
+        }
+
+        form.addEventListener("submit", async (event) => {
+            event.preventDefault();
+            status.className = "status";
+            setLoading(true);
+
+            try {
+                const response = await fetch("/extract", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ url: urlInput.value.trim() }),
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    showError(data.error || "Something went wrong.");
+                } else {
+                    showSuccess(data);
+                }
+            } catch (err) {
+                showError("Network error: " + err.message);
+            } finally {
+                setLoading(false);
+            }
+        });
+    </script>
+</body>
+</html>
