@@ -34,6 +34,3 @@ A Python GUI application that extracts course syllabi from Udemy course pages an
 ## Directory Structure
 * `HTML Files/`: Downloaded Udemy course HTML pages and their assets.
 * `Markdown files/`: Generated markdown output (to be created).
-
-## Important Instructions
-* **Do NOT read or explore the `venv/` folder.** It contains the Python virtual environment and is not part of the application source code.
