@@ -4,12 +4,18 @@ Takes the structured dict produced by ``parser.parse`` and writes a markdown
 file to ``Markdown files/``. The output preserves the exact ordering of
 sections, sub-sections, and descriptions as they appear in the HTML.
 
-The generated file is named after the course title (slugified), so the saved
-markdown is recognisable by its course name rather than a URL slug.
+The generated file is named after the course name the user supplied, with a
+source suffix (``-udemy`` or ``-w3school``) so the two sources never collide.
 """
 
 import os
 import re
+
+# Maps the detected source name to the suffix used in the markdown filename.
+_SOURCE_SUFFIXES = {
+    "udemy": "udemy",
+    "w3schools": "w3school",
+}
 
 
 def _slugify(text: str) -> str:
@@ -25,24 +31,35 @@ def _slugify(text: str) -> str:
     return text or "course"
 
 
-def generate(data: dict, course_slug: str | None = None) -> str:
+def generate(
+    data: dict,
+    course_name: str | None = None,
+    source: str | None = None,
+) -> str:
     """Write a markdown file for the parsed course data and return its path.
 
     Args:
         data: The structured dict from ``parser.parse`` containing
             ``title``, ``objectives``, and ``syllabus``.
-        course_slug: Optional fallback slug for the filename (e.g. the URL
-            slug). When omitted, the filename is derived from the course title.
+        course_name: The course name supplied by the user. The filename is
+            built from this. Falls back to the parsed course title when omitted.
+        source: The detected source (``"udemy"`` or ``"w3schools"``). Adds a
+            ``-udemy`` or ``-w3school`` suffix to the filename when known.
 
     Returns:
         The path to the written markdown file.
     """
     title = (data.get("title") or "Untitled Course").strip()
 
-    # Name the file after the course title; fall back to the URL slug.
-    filename_base = _slugify(title) if title and title != "Untitled Course" else None
-    if not filename_base:
-        filename_base = _slugify(course_slug) if course_slug else "course"
+    # Name the file after the user-supplied course name; fall back to the title.
+    name_for_file = (course_name or "").strip()
+    if not name_for_file and title and title != "Untitled Course":
+        name_for_file = title
+    filename_base = _slugify(name_for_file) if name_for_file else "course"
+
+    suffix = _SOURCE_SUFFIXES.get(source or "")
+    if suffix:
+        filename_base = f"{filename_base}-{suffix}"
 
     output_dir = os.path.join(os.path.dirname(__file__), "Markdown files")
     os.makedirs(output_dir, exist_ok=True)

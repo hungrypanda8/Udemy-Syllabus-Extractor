@@ -62,7 +62,8 @@
             margin-bottom: 8px;
         }
 
-        input[type="url"] {
+        input[type="url"],
+        input[type="text"] {
             width: 100%;
             padding: 12px 14px;
             font-size: 1rem;
@@ -72,9 +73,12 @@
             transition: border-color 0.15s;
         }
 
-        input[type="url"]:focus {
+        input[type="url"]:focus,
+        input[type="text"]:focus {
             border-color: var(--accent);
         }
+
+        .field { margin-bottom: 16px; }
 
         button {
             margin-top: 16px;
@@ -148,14 +152,26 @@
         </p>
 
         <form id="extract-form">
-            <label for="url">Udemy or W3Schools URL</label>
-            <input
-                type="url"
-                id="url"
-                name="url"
-                placeholder="https://www.udemy.com/course/...  or  https://www.w3schools.com/js/default.asp"
-                required
-            />
+            <div class="field">
+                <label for="url">Udemy or W3Schools URL</label>
+                <input
+                    type="url"
+                    id="url"
+                    name="url"
+                    placeholder="https://www.udemy.com/course/...  or  https://www.w3schools.com/js/default.asp"
+                    required
+                />
+            </div>
+            <div class="field">
+                <label for="course-name">Course name</label>
+                <input
+                    type="text"
+                    id="course-name"
+                    name="course_name"
+                    placeholder="e.g. JavaScript"
+                    required
+                />
+            </div>
             <button type="submit" id="submit-btn">Extract Syllabus</button>
         </form>
 
@@ -165,6 +181,7 @@
     <script>
         const form = document.getElementById("extract-form");
         const urlInput = document.getElementById("url");
+        const courseNameInput = document.getElementById("course-name");
         const btn = document.getElementById("submit-btn");
         const status = document.getElementById("status");
 
@@ -204,7 +221,10 @@
                 const response = await fetch("/extract", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ url: urlInput.value.trim() }),
+                    body: JSON.stringify({
+                        url: urlInput.value.trim(),
+                        course_name: courseNameInput.value.trim(),
+                    }),
                 });
 
                 const data = await response.json();

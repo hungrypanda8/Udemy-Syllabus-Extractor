@@ -52,15 +52,19 @@ def index():
 def extract():
     """Run the full extraction pipeline for a submitted Udemy or W3Schools URL.
 
-    Expects a JSON body of the form ``{"url": "..."}``. Returns JSON describing
-    the generated markdown file, or an error message with an appropriate HTTP
-    status code on failure.
+    Expects a JSON body of the form ``{"url": "...", "course_name": "..."}``.
+    Returns JSON describing the generated markdown file, or an error message
+    with an appropriate HTTP status code on failure.
     """
     data = request.get_json(silent=True) or {}
     url = (data.get("url") or "").strip()
+    course_name = (data.get("course_name") or "").strip()
 
     if not url:
         return jsonify({"error": "Please provide a course or tutorial URL."}), 400
+
+    if not course_name:
+        return jsonify({"error": "Please provide a course name."}), 400
 
     # Route the URL to the matching downloader + parser based on its host.
     try:
@@ -81,7 +85,7 @@ def extract():
         return jsonify({"error": f"Failed to parse the page: {exc}"}), 500
 
     try:
-        markdown_path = generator.generate(parsed)
+        markdown_path = generator.generate(parsed, course_name, source)
     except Exception as exc:  # noqa: BLE001 - surface any generation failure
         return jsonify({"error": f"Failed to generate the markdown file: {exc}"}), 500
 
