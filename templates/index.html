@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Udemy Syllabus Extractor</title>
+    <title>Syllabus Extractor</title>
     <style>
         :root {
             --accent: #a435f0;
@@ -141,18 +141,19 @@
 </head>
 <body>
     <main class="card">
-        <h1>Udemy Syllabus Extractor</h1>
+        <h1>Syllabus Extractor</h1>
         <p class="subtitle">
-            Paste a Udemy course URL to generate a structured markdown syllabus.
+            Paste a Udemy course or W3Schools tutorial URL to generate a
+            structured markdown syllabus.
         </p>
 
         <form id="extract-form">
-            <label for="url">Udemy course URL</label>
+            <label for="url">Udemy or W3Schools URL</label>
             <input
                 type="url"
                 id="url"
                 name="url"
-                placeholder="https://www.udemy.com/course/..."
+                placeholder="https://www.udemy.com/course/...  or  https://www.w3schools.com/js/default.asp"
                 required
             />
             <button type="submit" id="submit-btn">Extract Syllabus</button>
@@ -174,9 +175,16 @@
 
         function showSuccess(data) {
             status.className = "status success";
+            // W3Schools has no objectives, so only show that count when present.
+            const sectionLabel = data.sections === 1 ? "section" : "sections";
+            let meta = `${data.sections} ${sectionLabel}`;
+            if (data.objectives > 0) {
+                const objLabel = data.objectives === 1 ? "objective" : "objectives";
+                meta += ` · ${data.objectives} ${objLabel}`;
+            }
             status.innerHTML =
                 `<div>✅ Syllabus extracted for <strong>${data.title || "the course"}</strong>.</div>` +
-                `<div class="meta">${data.sections} sections · ${data.objectives} objectives</div>` +
+                `<div class="meta">${meta}</div>` +
                 `<div class="meta"><a href="${data.download_url}">Download ${data.filename}</a></div>`;
         }
 

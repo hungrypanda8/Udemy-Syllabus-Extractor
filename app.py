@@ -18,6 +18,16 @@ from flask import (
 import downloader
 import generator
 import parser as html_parser
+import source as source_router
+import w3schools_downloader
+import w3schools_parser
+
+# Maps each source to its (downloader, parser) pair. Both parsers emit the
+# same intermediate dict, so the generator stays source-agnostic.
+_PIPELINES = {
+    "udemy": (downloader, html_parser),
+    "w3schools": (w3schools_downloader, w3schools_parser),
+}
 
 BASE_DIR = os.path.dirname(__file__)
 HTML_DIR = os.path.join(BASE_DIR, "HTML Files")
@@ -40,7 +50,7 @@ def index():
 
 @app.route("/extract", methods=["POST"])
 def extract():
-    """Run the full extraction pipeline for a submitted Udemy URL.
+    """Run the full extraction pipeline for a submitted Udemy or W3Schools URL.
 
     Expects a JSON body of the form ``{"url": "..."}``. Returns JSON describing
     the generated markdown file, or an error message with an appropriate HTTP
@@ -50,20 +60,25 @@ def extract():
     url = (data.get("url") or "").strip()
 
     if not url:
-        return jsonify({"error": "Please provide a Udemy course URL."}), 400
+        return jsonify({"error": "Please provide a course or tutorial URL."}), 400
 
-    if "udemy.com" not in url:
-        return jsonify({"error": "That does not look like a Udemy course URL."}), 400
+    # Route the URL to the matching downloader + parser based on its host.
+    try:
+        source = source_router.detect_source(url)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), 400
+
+    page_downloader, page_parser = _PIPELINES[source]
 
     try:
-        html_path = downloader.download(url)
+        html_path = page_downloader.download(url)
     except Exception as exc:  # noqa: BLE001 - surface any download failure
-        return jsonify({"error": f"Failed to download the course page: {exc}"}), 502
+        return jsonify({"error": f"Failed to download the page: {exc}"}), 502
 
     try:
-        parsed = html_parser.parse(html_path)
+        parsed = page_parser.parse(html_path)
     except Exception as exc:  # noqa: BLE001 - surface any parse failure
-        return jsonify({"error": f"Failed to parse the course page: {exc}"}), 500
+        return jsonify({"error": f"Failed to parse the page: {exc}"}), 500
 
     try:
         markdown_path = generator.generate(parsed)
